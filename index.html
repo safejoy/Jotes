@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JoyNotes — local-only notes</title>
+  <style>
+    :root{
+      --bg:#f7f5ff;            /* pastel lilac */
+      --bg-2:#fff;             /* panel */
+      --ink:#2b2b2b;
+      --muted:#6b6b6b;
+      --brand:#8a7cf0;         /* soft violet */
+      --accent:#77d6c3;        /* mint */
+      --warn:#ff9797;          /* rose */
+      --ring: 0 0 0 3px rgba(138,124,240,.25);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;background:linear-gradient(180deg,var(--bg),#eefcff);color:var(--ink)}
+    .app{display:grid;grid-template-columns:320px 1fr;gap:12px;max-width:1200px;margin:0 auto;padding:16px;height:100%}
+    .panel{background:var(--bg-2);border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:14px;min-height:0}
+    .left{display:flex;flex-direction:column}
+    .search{display:flex;gap:8px}
+    input,textarea,button,select{border:1px solid #e6e6ef;border-radius:10px;padding:10px;background:#fff;color:var(--ink);box-shadow:none}
+    input:focus,textarea:focus,button:focus{outline:none;box-shadow:var(--ring)}
+    .btn{cursor:pointer;border:none;background:var(--brand);color:#fff;padding:10px 12px;border-radius:10px}
+    .btn.secondary{background:var(--accent);color:#083a33}
+    .btn.warn{background:var(--warn);color:#5a1010}
+    .btn.ghost{background:#f5f4ff;color:#3c3374;border:1px solid #e6e6ef}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-block:10px}
+    .list{overflow:auto;flex:1;display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .item{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid #eee;border-radius:12px;cursor:pointer;background:#fff}
+    .item:hover{box-shadow:0 2px 10px rgba(0,0,0,.06)}
+    .item.active{outline:3px solid rgba(119,214,195,.35)}
+    .title{font-weight:600}
+    .muted{color:var(--muted);font-size:.9em}
+    .right{display:grid;grid-template-rows:auto 1fr}
+    .fields{display:grid;grid-template-columns:1fr 180px;gap:10px}
+    textarea{width:100%;height:220px;resize:auto}
+    .editor{display:grid;grid-template-rows:auto 1fr;gap:10px;height:calc(100% - 6px)}
+    .grow{min-height:0}
+    .hidden{display:none}
+    @media (max-width: 900px){
+      .app{grid-template-columns:1fr;gap:8px}
+      .right{height:65vh}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="panel left" aria-label="Notes list">
+      <div class="search">
+        <input id="q" type="search" placeholder="Search notes (title + text) …" aria-label="Search notes" />
+        <button class="btn ghost" id="newBtn" title="New note (Ctrl+N)">＋</button>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn secondary" id="exportBtn" title="Download backup (JSON)">Export</button>
+        <label class="btn ghost" for="importFile" title="Import backup">Import</label>
+        <input id="importFile" class="hidden" type="file" accept="application/json" />
+        <button class="btn ghost" id="clearSearch">Clear</button>
+        <button class ="btn ghost" onclick="window.location.href='https://github.com/safejoy/Joys-Notes/tree/main'" >Source</button>
+      </div>
+
+      <div id="list" class="list" role="listbox" aria-label="Notes"></div>
+    </aside>
+
+    <!-- Editor -->
+    <main class="panel right" aria-label="Editor">
+      <div class="editor">
+        <div class="fields">
+          <input id="title" placeholder="Title" aria-label="Note title" />
+          <select id="color" aria-label="Note color">
+            <option value="#fff">White</option>
+            <option value="#fff7f9">Rose</option>
+            <option value="#f7fffb">Mint</option>
+            <option value="#f7f7ff">Lilac</option>
+            <option value="#fffdf2">Vanilla</option>
+            <option value="#f2fbff">Sky</option>
+          </select>
+        </div>
+        <textarea id="body" class="grow" placeholder="Write your note here… (autosaves)" aria-label="Note body"></textarea>
+        <div class="toolbar">
+          <button class="btn" id="saveBtn" title="Save (Ctrl+S)">Save</button>
+          <button class="btn warn" id="deleteBtn" title="Delete this note">Delete</button>
+          <span class="muted" id="meta"></span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // --- Storage helpers ---
+    const KEY = 'joynotes.v1';
+    const byId = (id)=>document.getElementById(id);
+    const els = {list:byId('list'), q:byId('q'), title:byId('title'), body:byId('body'), meta:byId('meta'), color:byId('color')};
+
+    function loadNotes(){
+      try{ return JSON.parse(localStorage.getItem(KEY)) || []; }
+      catch{ return []; }
+    }
+    function saveNotes(notes){ localStorage.setItem(KEY, JSON.stringify(notes)); }
+
+    // --- State ---
+    let notes = loadNotes();
+    let currentId = null;
+
+    // --- Utilities ---
+    const uid = ()=> Math.random().toString(36).slice(2)+Date.now().toString(36);
+    const fmt = (d)=> new Date(d).toLocaleString();
+    const debounce=(fn,ms=400)=>{let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)};};
+
+    // --- CRUD ---
+    function createNote(){
+      const n = {id:uid(), title:'Untitled', body:'', color:'#fff', updated:Date.now()};
+      notes.unshift(n); // newest first
+      saveNotes(notes); renderList(); select(n.id); focusTitle();
+    }
+
+    function updateCurrent(part){
+      if(!currentId) return; const n = notes.find(x=>x.id===currentId); if(!n) return;
+      Object.assign(n, part, {updated:Date.now()});
+      saveNotes(notes); renderList();
+      els.meta.textContent = `Saved · ${fmt(n.updated)}`;
+    }
+
+    function deleteCurrent(){
+      if(!currentId) return; const i = notes.findIndex(x=>x.id===currentId);
+      if(i>-1){ if(confirm('Delete this note?')){ notes.splice(i,1); saveNotes(notes); renderList(); currentId=null; clearEditor(); }}
+    }
+
+    function clearEditor(){
+      els.title.value=''; els.body.value=''; els.color.value='#fff'; els.meta.textContent='';
+      document.querySelector('main').style.background='var(--bg-2)';
+    }
+
+    // --- UI render ---
+    function renderList(){
+      const q = els.q.value.trim().toLowerCase();
+      els.list.innerHTML='';
+      const filtered = notes.filter(n => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q));
+      filtered.forEach(n=>{
+        const li = document.createElement('button');
+        li.className = 'item'+(n.id===currentId?' active':'');
+        li.setAttribute('role','option');
+        li.innerHTML = `<div style="width:14px;height:14px;border-radius:4px;background:${n.color};border:1px solid #e6e6ef"></div>
+                        <div style="text-align:left;flex:1">
+                          <div class="title">${escapeHtml(n.title||'Untitled')}</div>
+                          <div class="muted">${new Date(n.updated).toLocaleDateString()} · ${truncate(n.body, 80)}</div>
+                        </div>`;
+        li.onclick = ()=> select(n.id);
+        els.list.appendChild(li);
+      });
+      if(filtered.length===0){
+        const empty=document.createElement('div');
+        empty.className='muted';
+        empty.style.margin='6px';
+        empty.textContent = q? 'No matches — try clearing search.' : 'No notes yet. Create one →';
+        els.list.appendChild(empty);
+      }
+    }
+
+    function select(id){
+      currentId=id; const n = notes.find(x=>x.id===id); if(!n) return;
+      els.title.value = n.title; els.body.value = n.body; els.color.value=n.color||'#fff';
+      document.querySelector('main').style.background = n.color || 'var(--bg-2)';
+      els.meta.textContent = `Last edited ${fmt(n.updated)}`;
+      document.querySelectorAll('.item').forEach(it=>it.classList.remove('active'));
+      const active = Array.from(els.list.children).find(el=>el.innerText.includes(n.title));
+      if(active) active.classList.add('active');
+    }
+
+    // --- Import / Export ---
+    function exportNotes(){
+      const blob = new Blob([JSON.stringify(notes,null,2)], {type:'application/json'});
+      const a = Object.assign(document.createElement('a'), {download:`joynotes-backup-${Date.now()}.json`, href:URL.createObjectURL(blob)});
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+    }
+    function importNotes(file){
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const incoming = JSON.parse(reader.result || '[]');
+          if(!Array.isArray(incoming)) throw new Error('Invalid backup');
+          // merge by id, prefer incoming content
+          const map = new Map(notes.map(n=>[n.id,n]));
+          incoming.forEach(n=> map.set(n.id, {...(map.get(n.id)||{}), ...n}) );
+          notes = Array.from(map.values()).sort((a,b)=>b.updated-a.updated);
+          saveNotes(notes); renderList(); if(notes[0]) select(notes[0].id);
+        }catch(e){ alert('Import failed: '+e.message); }
+      };
+      reader.readAsText(file);
+    }
+
+    // --- helpers ---
+    function truncate(s, n){ s = (s||'').replace(/\n/g,' '); return s.length>n? s.slice(0,n-1)+'…': s; }
+    function escapeHtml(s){return (s||'').replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));}
+    function focusTitle(){ els.title.focus(); els.title.select(); }
+
+    // --- Events ---
+    document.getElementById('newBtn').addEventListener('click', createNote);
+    document.getElementById('deleteBtn').addEventListener('click', deleteCurrent);
+    document.getElementById('exportBtn').addEventListener('click', exportNotes);
+    document.getElementById('importFile').addEventListener('change', e=>{ if(e.target.files[0]) importNotes(e.target.files[0]); e.target.value=''; });
+    document.getElementById('clearSearch').addEventListener('click', ()=>{ els.q.value=''; renderList(); });
+
+    const autoSaveTitle = debounce(()=> updateCurrent({title: els.title.value.trim() || 'Untitled'}));
+    const autoSaveBody  = debounce(()=> updateCurrent({body: els.body.value}));
+    const autoSaveColor = ()=>{ updateCurrent({color: els.color.value}); document.querySelector('main').style.background = els.color.value; };
+
+    els.title.addEventListener('input', autoSaveTitle);
+    els.body.addEventListener('input', autoSaveBody);
+    els.color.addEventListener('change', autoSaveColor);
+    els.q.addEventListener('input', renderList);
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e)=>{
+      if(e.ctrlKey && e.key.toLowerCase()==='s'){ e.preventDefault(); updateCurrent({title: els.title.value.trim()||'Untitled', body: els.body.value}); }
+      if(e.ctrlKey && e.key.toLowerCase()==='n'){ e.preventDefault(); createNote(); }
+      if(e.key==='Escape'){ els.q.value=''; renderList(); }
+    });
+
+    // First run
+    if(notes.length===0){
+      notes=[{id:uid(), title:'Welcome to JoyNotes', body:'Your notes live only in this browser using localStorage.\n\n• Click Export to download a backup JSON.\n• Use the color menu to give a note a pastel background.\n• Search titles and bodies on the left.', color:'#f7f7ff', updated:Date.now()}];
+      saveNotes(notes);
+    }
+    renderList(); select(notes[0].id);
+  </script>
+</body>
+</html>
