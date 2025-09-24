@@ -107,7 +107,7 @@ npx serve .
 
 ## Customization
 
-JoyNotes is designed to be easily customizable:
+Joy-Notes is designed to be easily customizable:
 
 ### Color Themes
 Edit the CSS custom properties in the `:root` section:
