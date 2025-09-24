@@ -4,65 +4,152 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>JoyNotes — local-only notes</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.7.2/tinymce.min.js"></script>
   <style>
     :root{
-      --bg:#665a66;            /* pastel lilac */
-      --bg-2:#fff;             /* panel */
-      --ink:#2b2b2b;
-      --muted:#6b6b6b;
-      --brand:#8a7cf0;         /* soft violet */
-      --accent:#77d6c3;        /* mint */
-      --warn:#ff9797;          /* rose */
+      --bg-light:#665a66;            /* pastel lilac */
+      --bg-dark:#2d2d2d;             /* dark background */
+      --bg-2-light:#fff;             /* panel light */
+      --bg-2-dark:#3a3a3a;           /* panel dark */
+      --ink-light:#2b2b2b;
+      --ink-dark:#e0e0e0;
+      --muted-light:#6b6b6b;
+      --muted-dark:#a0a0a0;
+      --brand:#8a7cf0;               /* soft violet */
+      --accent:#77d6c3;             /* mint */
+      --warn:#ff9797;               /* rose */
       --ring: 0 0 0 3px rgba(138,124,240,.25);
+      --border-light:#e6e6ef;
+      --border-dark:#555;
+      --hover-light:rgba(0,0,0,.06);
+      --hover-dark:rgba(255,255,255,.08);
+      
+      /* Note colors - darker pastels */
+      --note-white-light:#fff;
+      --note-white-dark:#4a4a4a;
+      --note-rose-light:#f5e6ea;
+      --note-rose-dark:#4a3538;
+      --note-mint-light:#e6f5f0;
+      --note-mint-dark:#354a45;
+      --note-lilac-light:#e6e6f5;
+      --note-lilac-dark:#38384a;
+      --note-vanilla-light:#f5f2e6;
+      --note-vanilla-dark:#4a4735;
+      --note-sky-light:#e6f2f5;
+      --note-sky-dark:#35424a;
     }
+
+    [data-theme="light"] {
+      --bg: var(--bg-light);
+      --bg-2: var(--bg-2-light);
+      --ink: var(--ink-light);
+      --muted: var(--muted-light);
+      --border: var(--border-light);
+      --hover: var(--hover-light);
+      --note-white: var(--note-white-light);
+      --note-rose: var(--note-rose-light);
+      --note-mint: var(--note-mint-light);
+      --note-lilac: var(--note-lilac-light);
+      --note-vanilla: var(--note-vanilla-light);
+      --note-sky: var(--note-sky-light);
+    }
+
+    [data-theme="dark"] {
+      --bg: var(--bg-dark);
+      --bg-2: var(--bg-2-dark);
+      --ink: var(--ink-dark);
+      --muted: var(--muted-dark);
+      --border: var(--border-dark);
+      --hover: var(--hover-dark);
+      --note-white: var(--note-white-dark);
+      --note-rose: var(--note-rose-dark);
+      --note-mint: var(--note-mint-dark);
+      --note-lilac: var(--note-lilac-dark);
+      --note-vanilla: var(--note-vanilla-dark);
+      --note-sky: var(--note-sky-dark);
+    }
+
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;background:linear-gradient(180deg,var(--bg),#9358a0);color:var(--ink)}
-    .app{display:grid;grid-template-columns:320px 1fr;gap:12px;max-width:1200px;margin:0 auto;padding:16px;height:100%}
-    .panel{background:var(--bg-2);border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:14px;min-height:0}
-    .left{display:flex;flex-direction:column}
+    body{margin:0;font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;background:linear-gradient(180deg,var(--bg),var(--bg-2));color:var(--ink);transition:all 0.3s ease}
+    
+    .app{display:grid;grid-template-columns:320px 1fr;gap:12px;max-width:1400px;margin:0 auto;padding:16px;height:100vh;overflow:hidden}
+    .panel{background:var(--bg-2);border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:14px;min-height:0;transition:background-color 0.3s ease}
+    .left{display:flex;flex-direction:column;max-height:100%}
     .search{display:flex;gap:8px}
-    input,textarea,button,select{border:1px solid #e6e6ef;border-radius:10px;padding:10px;background:#fff;color:var(--ink);box-shadow:none}
+    input,textarea,button,select{border:1px solid var(--border);border-radius:10px;padding:10px;background:var(--bg-2);color:var(--ink);box-shadow:none;transition:all 0.3s ease}
     input:focus,textarea:focus,button:focus{outline:none;box-shadow:var(--ring)}
-    .btn{cursor:pointer;border:none;background:var(--brand);color:#fff;padding:10px 12px;border-radius:10px}
+    .btn{cursor:pointer;border:none;background:var(--brand);color:#fff;padding:10px 12px;border-radius:10px;font-size:14px;white-space:nowrap}
     .btn.secondary{background:var(--accent);color:#083a33}
     .btn.warn{background:var(--warn);color:#5a1010}
-    .btn.ghost{background:#f5f4ff;color:#3c3374;border:1px solid #e6e6ef}
+    .btn.ghost{background:var(--bg-2);color:var(--ink);border:1px solid var(--border)}
+    .btn:hover{opacity:0.9;transform:translateY(-1px)}
     .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-block:10px}
-    .list{overflow:auto;flex:1;display:flex;flex-direction:column;gap:6px;margin-top:10px}
-    .item{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid #eee;border-radius:12px;cursor:pointer;background:#fff}
-    .item:hover{box-shadow:0 2px 10px rgba(0,0,0,.06)}
+    .list{overflow:auto;flex:1;display:flex;flex-direction:column;gap:6px;margin-top:10px;min-height:0}
+    .item{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:12px;cursor:pointer;background:var(--bg-2);color:var(--ink);transition:all 0.2s ease}
+    .item:hover{box-shadow:0 2px 10px var(--hover);transform:translateY(-1px)}
     .item.active{outline:3px solid rgba(119,214,195,.35)}
     .title{font-weight:600}
     .muted{color:var(--muted);font-size:.9em}
-    .right{display:grid;grid-template-rows:auto 1fr}
-    .fields{display:grid;grid-template-columns:1fr 180px;gap:10px}
-    textarea{width:100%;height:220px;resize:auto}
-    .editor{display:grid;grid-template-rows:auto 1fr;gap:10px;height:calc(100% - 6px)}
+    .right{display:grid;grid-template-rows:auto 1fr;min-height:0}
+    .fields{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center}
+    .editor{display:grid;grid-template-rows:auto 1fr auto;gap:10px;height:100%}
+    .editor-container{position:relative;flex:1;min-height:300px}
+    #body{width:100%;min-height:300px;resize:vertical;border:1px solid var(--border);border-radius:10px;padding:12px;font-family:inherit}
     .grow{min-height:0}
     .hidden{display:none}
+    .theme-toggle{background:none;border:1px solid var(--border);color:var(--ink);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:18px}
+    .clear-note{background:var(--warn);color:#fff}
+
+    /* Mobile responsiveness */
     @media (max-width: 900px){
-      .app{grid-template-columns:1fr;gap:8px}
-      .right{height:65vh}
+      .app{grid-template-columns:1fr;gap:8px;height:100vh}
+      .left{max-height:40vh}
+      .right{min-height:60vh}
+      .fields{grid-template-columns:1fr auto;gap:8px}
+      .theme-toggle{grid-column:1/-1;justify-self:start}
+      .toolbar{gap:6px}
+      .btn{padding:8px 10px;font-size:13px}
+      .list{max-height:none}
+      #body{min-height:200px}
+    }
+
+    @media (max-width: 600px){
+      .app{padding:8px;gap:6px}
+      .panel{padding:10px}
+      .toolbar{justify-content:flex-start}
+      .btn{padding:6px 8px;font-size:12px}
+      .fields{grid-template-columns:1fr;gap:6px}
+      .search{flex-direction:column;gap:6px}
+      input{width:100%}
+    }
+
+    /* Dark mode adjustments for TinyMCE */
+    [data-theme="dark"] .tox-tinymce {
+      border-color: var(--border) !important;
+    }
+    
+    [data-theme="dark"] .tox .tox-edit-area__iframe {
+      background: var(--bg-2) !important;
     }
   </style>
   <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
 </head>
-<body>
+<body data-theme="light">
   <div class="app">
     <!-- Sidebar -->
     <aside class="panel left" aria-label="Notes list">
       <div class="search">
-        <input id="q" type="search" placeholder="Search notes (title + text) …" aria-label="Search notes" />
+        <input id="q" type="search" placeholder="Search notes..." aria-label="Search notes" />
         <button class="btn ghost" id="newBtn" title="New note (Ctrl+N)">＋</button>
       </div>
 
       <div class="toolbar">
-        <button class="btn secondary" id="exportBtn" title="Download backup (JSON)">Export</button>
+        <button class="btn secondary" id="exportBtn" title="Download backup">Export</button>
         <label class="btn ghost" for="importFile" title="Import backup">Import</label>
         <input id="importFile" class="hidden" type="file" accept="application/json" />
-        <button class="btn ghost" id="clearSearch">Clear</button>
-        <button class ="btn ghost" onclick="window.location.href='https://github.com/safejoy/Joys-Notes/tree/main'" >Source</button>
+        <button class="btn ghost" id="clearSearch">Clear Search</button>
+        <button class="btn ghost" onclick="window.location.href='https://github.com/safejoy/Joys-Notes/tree/main'">Source</button>
       </div>
 
       <div id="list" class="list" role="listbox" aria-label="Notes"></div>
@@ -72,20 +159,26 @@
     <main class="panel right" aria-label="Editor">
       <div class="editor">
         <div class="fields">
-          <input id="title" placeholder="Title" aria-label="Note title" />
+          <input id="title" placeholder="Note Title" aria-label="Note title" />
           <select id="color" aria-label="Note color">
-            <option value="#fff">White</option>
-            <option value="#fff7f9">Rose</option>
-            <option value="#f7fffb">Mint</option>
-            <option value="#f7f7ff">Lilac</option>
-            <option value="#fffdf2">Vanilla</option>
-            <option value="#f2fbff">Sky</option>
+            <option value="white">White</option>
+            <option value="rose">Rose</option>
+            <option value="mint">Mint</option>
+            <option value="lilac">Lilac</option>
+            <option value="vanilla">Vanilla</option>
+            <option value="sky">Sky</option>
           </select>
+          <button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode">🌙</button>
         </div>
-        <textarea id="body" class="grow" placeholder="Write your note here… (autosaves)" aria-label="Note body"></textarea>
+        
+        <div class="editor-container">
+          <textarea id="body" class="grow" placeholder="Write your note here... (autosaves)" aria-label="Note body"></textarea>
+        </div>
+        
         <div class="toolbar">
-          <button class="btn" id="saveBtn" title="Save (Ctrl+S)">Save</button>
-          <button class="btn warn" id="deleteBtn" title="Delete this note">Delete</button>
+          <button class="btn" id="saveBtn" title="Save (Ctrl+S)">💾 Save</button>
+          <button class="btn warn" id="deleteBtn" title="Delete this note">🗑️ Delete</button>
+          <button class="btn clear-note" id="clearBtn" title="Clear current note">Clear Note</button>
           <span class="muted" id="meta"></span>
         </div>
       </div>
@@ -95,6 +188,7 @@
   <script>
     // --- Storage helpers ---
     const KEY = 'joynotes.v1';
+    const THEME_KEY = 'joynotes.theme';
     const byId = (id)=>document.getElementById(id);
     const els = {list:byId('list'), q:byId('q'), title:byId('title'), body:byId('body'), meta:byId('meta'), color:byId('color')};
 
@@ -104,36 +198,146 @@
     }
     function saveNotes(notes){ localStorage.setItem(KEY, JSON.stringify(notes)); }
 
+    function loadTheme(){
+      return localStorage.getItem(THEME_KEY) || 'light';
+    }
+    function saveTheme(theme){ 
+      localStorage.setItem(THEME_KEY, theme);
+      document.body.setAttribute('data-theme', theme);
+      byId('themeToggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+      // Reinitialize TinyMCE with new theme
+      if (window.tinymce && window.tinymce.get('body')) {
+        initTinyMCE();
+      }
+    }
+
     // --- State ---
     let notes = loadNotes();
     let currentId = null;
+    let tinyMCEInitialized = false;
+
+    // --- TinyMCE Setup ---
+    function initTinyMCE() {
+      if (window.tinymce && window.tinymce.get('body')) {
+        window.tinymce.get('body').remove();
+      }
+      
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      
+      window.tinymce.init({
+        selector: '#body',
+        height: '100%',
+        menubar: false,
+        plugins: [
+          'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
+          'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+          'insertdatetime', 'table', 'code', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | blocks | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | code',
+        content_style: `
+          body { 
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; 
+            font-size: 14px;
+            background: ${isDark ? '#3a3a3a' : '#fff'} !important;
+            color: ${isDark ? '#e0e0e0' : '#2b2b2b'} !important;
+            margin: 8px;
+          }
+        `,
+        skin: isDark ? 'oxide-dark' : 'oxide',
+        content_css: isDark ? 'dark' : 'default',
+        setup: function (editor) {
+          editor.on('input change', function () {
+            autoSaveBody();
+          });
+          editor.on('init', function() {
+            tinyMCEInitialized = true;
+            // Load current note content if available
+            if (currentId) {
+              const note = notes.find(n => n.id === currentId);
+              if (note) {
+                editor.setContent(note.body || '');
+              }
+            }
+          });
+        }
+      });
+    }
 
     // --- Utilities ---
     const uid = ()=> Math.random().toString(36).slice(2)+Date.now().toString(36);
     const fmt = (d)=> new Date(d).toLocaleString();
     const debounce=(fn,ms=400)=>{let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)};};
 
+    function getColorValue(colorName) {
+      return `var(--note-${colorName})`;
+    }
+
     // --- CRUD ---
     function createNote(){
-      const n = {id:uid(), title:'Untitled', body:'', color:'#fff', updated:Date.now()};
+      const n = {id:uid(), title:'Untitled', body:'', color:'white', updated:Date.now()};
       notes.unshift(n); // newest first
       saveNotes(notes); renderList(); select(n.id); focusTitle();
     }
 
     function updateCurrent(part){
-      if(!currentId) return; const n = notes.find(x=>x.id===currentId); if(!n) return;
+      if(!currentId) return; 
+      const n = notes.find(x=>x.id===currentId); 
+      if(!n) return;
+      
+      // Get content from TinyMCE if it's initialized
+      if (part.body === undefined && tinyMCEInitialized && window.tinymce && window.tinymce.get('body')) {
+        part.body = window.tinymce.get('body').getContent();
+      }
+      
       Object.assign(n, part, {updated:Date.now()});
       saveNotes(notes); renderList();
       els.meta.textContent = `Saved · ${fmt(n.updated)}`;
     }
 
     function deleteCurrent(){
-      if(!currentId) return; const i = notes.findIndex(x=>x.id===currentId);
-      if(i>-1){ if(confirm('Delete this note?')){ notes.splice(i,1); saveNotes(notes); renderList(); currentId=null; clearEditor(); }}
+      if(!currentId) return; 
+      const i = notes.findIndex(x=>x.id===currentId);
+      if(i>-1){ 
+        if(confirm('Delete this note?')){ 
+          notes.splice(i,1); 
+          saveNotes(notes); 
+          renderList(); 
+          currentId=null; 
+          clearEditor(); 
+        }
+      }
+    }
+
+    function clearCurrentNote(){
+      if(!currentId) return;
+      if(confirm('Clear this note content? This cannot be undone.')){
+        const n = notes.find(x=>x.id===currentId);
+        if(n){
+          n.title = 'Untitled';
+          n.body = '';
+          n.updated = Date.now();
+          saveNotes(notes);
+          renderList();
+          els.title.value = 'Untitled';
+          if (tinyMCEInitialized && window.tinymce && window.tinymce.get('body')) {
+            window.tinymce.get('body').setContent('');
+          } else {
+            els.body.value = '';
+          }
+          els.meta.textContent = `Cleared · ${fmt(n.updated)}`;
+        }
+      }
     }
 
     function clearEditor(){
-      els.title.value=''; els.body.value=''; els.color.value='#fff'; els.meta.textContent='';
+      els.title.value=''; 
+      if (tinyMCEInitialized && window.tinymce && window.tinymce.get('body')) {
+        window.tinymce.get('body').setContent('');
+      } else {
+        els.body.value='';
+      }
+      els.color.value='white'; 
+      els.meta.textContent='';
       document.querySelector('main').style.background='var(--bg-2)';
     }
 
@@ -146,10 +350,10 @@
         const li = document.createElement('button');
         li.className = 'item'+(n.id===currentId?' active':'');
         li.setAttribute('role','option');
-        li.innerHTML = `<div style="width:14px;height:14px;border-radius:4px;background:${n.color};border:1px solid #e6e6ef"></div>
+        li.innerHTML = `<div style="width:14px;height:14px;border-radius:4px;background:${getColorValue(n.color||'white')};border:1px solid var(--border)"></div>
                         <div style="text-align:left;flex:1">
                           <div class="title">${escapeHtml(n.title||'Untitled')}</div>
-                          <div class="muted">${new Date(n.updated).toLocaleDateString()} · ${truncate(n.body, 80)}</div>
+                          <div class="muted">${new Date(n.updated).toLocaleDateString()} · ${truncate(stripHtml(n.body), 80)}</div>
                         </div>`;
         li.onclick = ()=> select(n.id);
         els.list.appendChild(li);
@@ -158,15 +362,27 @@
         const empty=document.createElement('div');
         empty.className='muted';
         empty.style.margin='6px';
-        empty.textContent = q? 'No matches — try clearing search.' : 'No notes yet. Create one →';
+        empty.textContent = q? 'No matches found.' : 'No notes yet. Create one →';
         els.list.appendChild(empty);
       }
     }
 
     function select(id){
-      currentId=id; const n = notes.find(x=>x.id===id); if(!n) return;
-      els.title.value = n.title; els.body.value = n.body; els.color.value=n.color||'#fff';
-      document.querySelector('main').style.background = n.color || 'var(--bg-2)';
+      currentId=id; 
+      const n = notes.find(x=>x.id===id); 
+      if(!n) return;
+      
+      els.title.value = n.title; 
+      els.color.value = n.color || 'white';
+      
+      // Set content in TinyMCE or textarea
+      if (tinyMCEInitialized && window.tinymce && window.tinymce.get('body')) {
+        window.tinymce.get('body').setContent(n.body || '');
+      } else {
+        els.body.value = n.body;
+      }
+      
+      document.querySelector('main').style.background = getColorValue(n.color || 'white');
       els.meta.textContent = `Last edited ${fmt(n.updated)}`;
       document.querySelectorAll('.item').forEach(it=>it.classList.remove('active'));
       const active = Array.from(els.list.children).find(el=>el.innerText.includes(n.title));
@@ -180,6 +396,7 @@
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
     }
+
     function importNotes(file){
       const reader = new FileReader();
       reader.onload = ()=>{
@@ -199,18 +416,38 @@
     // --- helpers ---
     function truncate(s, n){ s = (s||'').replace(/\n/g,' '); return s.length>n? s.slice(0,n-1)+'…': s; }
     function escapeHtml(s){return (s||'').replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));}
+    function stripHtml(s){return (s||'').replace(/<[^>]*>/g, '');}
     function focusTitle(){ els.title.focus(); els.title.select(); }
 
     // --- Events ---
-    document.getElementById('newBtn').addEventListener('click', createNote);
-    document.getElementById('deleteBtn').addEventListener('click', deleteCurrent);
-    document.getElementById('exportBtn').addEventListener('click', exportNotes);
-    document.getElementById('importFile').addEventListener('change', e=>{ if(e.target.files[0]) importNotes(e.target.files[0]); e.target.value=''; });
-    document.getElementById('clearSearch').addEventListener('click', ()=>{ els.q.value=''; renderList(); });
+    byId('newBtn').addEventListener('click', createNote);
+    byId('deleteBtn').addEventListener('click', deleteCurrent);
+    byId('clearBtn').addEventListener('click', clearCurrentNote);
+    byId('exportBtn').addEventListener('click', exportNotes);
+    byId('importFile').addEventListener('change', e=>{ if(e.target.files[0]) importNotes(e.target.files[0]); e.target.value=''; });
+    byId('clearSearch').addEventListener('click', ()=>{ els.q.value=''; renderList(); });
+
+    // Theme toggle
+    byId('themeToggle').addEventListener('click', ()=>{
+      const current = document.body.getAttribute('data-theme');
+      const newTheme = current === 'dark' ? 'light' : 'dark';
+      saveTheme(newTheme);
+    });
 
     const autoSaveTitle = debounce(()=> updateCurrent({title: els.title.value.trim() || 'Untitled'}));
-    const autoSaveBody  = debounce(()=> updateCurrent({body: els.body.value}));
-    const autoSaveColor = ()=>{ updateCurrent({color: els.color.value}); document.querySelector('main').style.background = els.color.value; };
+    const autoSaveBody = debounce(()=> {
+      let content = '';
+      if (tinyMCEInitialized && window.tinymce && window.tinymce.get('body')) {
+        content = window.tinymce.get('body').getContent();
+      } else {
+        content = els.body.value;
+      }
+      updateCurrent({body: content});
+    });
+    const autoSaveColor = ()=>{ 
+      updateCurrent({color: els.color.value}); 
+      document.querySelector('main').style.background = getColorValue(els.color.value); 
+    };
 
     els.title.addEventListener('input', autoSaveTitle);
     els.body.addEventListener('input', autoSaveBody);
@@ -219,17 +456,49 @@
 
     // Keyboard shortcuts
     window.addEventListener('keydown', (e)=>{
-      if(e.ctrlKey && e.key.toLowerCase()==='s'){ e.preventDefault(); updateCurrent({title: els.title.value.trim()||'Untitled', body: els.body.value}); }
+      if(e.ctrlKey && e.key.toLowerCase()==='s'){ 
+        e.preventDefault(); 
+        let content = '';
+        if (tinyMCEInitialized && window.tinymce && window.tinymce.get('body')) {
+          content = window.tinymce.get('body').getContent();
+        } else {
+          content = els.body.value;
+        }
+        updateCurrent({title: els.title.value.trim()||'Untitled', body: content}); 
+      }
       if(e.ctrlKey && e.key.toLowerCase()==='n'){ e.preventDefault(); createNote(); }
       if(e.key==='Escape'){ els.q.value=''; renderList(); }
     });
 
-    // First run
-    if(notes.length===0){
-      notes=[{id:uid(), title:'Welcome to JoyNotes', body:'Your notes live only in this browser using localStorage.\n\n• Click Export to download a backup JSON.\n• Use the color menu to give a note a pastel background.\n• Search titles and bodies on the left.', color:'#f7f7ff', updated:Date.now()}];
-      saveNotes(notes);
+    // Initialize
+    function init(){
+      // Set theme
+      const savedTheme = loadTheme();
+      saveTheme(savedTheme);
+      
+      // Initialize TinyMCE
+      if (window.tinymce) {
+        initTinyMCE();
+      }
+
+      // First run
+      if(notes.length===0){
+        notes=[{
+          id:uid(), 
+          title:'Welcome to JoyNotes', 
+          body:'<h2>Welcome to JoyNotes!</h2><p>Your notes are stored locally in your browser using localStorage.</p><ul><li><strong>Export/Import:</strong> Click Export to download a backup JSON file</li><li><strong>Colors:</strong> Use the color menu to give notes beautiful pastel backgrounds</li><li><strong>Search:</strong> Search both titles and content on the left sidebar</li><li><strong>Rich Text:</strong> Use the toolbar above to format your notes</li><li><strong>Dark Mode:</strong> Toggle between light and dark themes with the 🌙 button</li></ul><p>Start writing your first note!</p>', 
+          color:'lilac', 
+          updated:Date.now()
+        }];
+        saveNotes(notes);
+      }
+      
+      renderList(); 
+      if(notes[0]) select(notes[0].id);
     }
-    renderList(); select(notes[0].id);
+
+    // Start the app
+    init();
   </script>
 </body>
 </html>
