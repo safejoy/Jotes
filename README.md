@@ -7,7 +7,7 @@ Taking notes in the browser has never been eaiser.
 > A beautiful, privacy-focused note-taking app that lives entirely in your browser
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://safejoy.github.io/Joys-Notes)
+[![GitHub Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://safejoy.github.io/Jotes)
 [![Responsive](https://img.shields.io/badge/responsive-mobile%20%26%20desktop-blue.svg)](#features)
 
 
@@ -38,12 +38,12 @@ Taking notes in the browser has never been eaiser.
 ## Quick Start
 
 ### Option 1: Use Online (Recommended)
-Visit **[JoyNotes Live Demo](https://safejoy.github.io/Joys-Notes)** - no installation needed!
+Visit **[JoyNotes Live Demo](https://safejoy.github.io/Jotes)** - no installation needed!
 
 ### Option 2: Run Locally
 ```bash
 # Clone the repository
-git clone https://github.com/safejoy/Joys-Notes.git
+git clone https://github.com/safejoy/Jotes.git
 cd Joys-Notes
 
 # Open with any web server
@@ -131,13 +131,13 @@ Add new note color options by extending the color system:
 We love contributions! Here's how you can help:
 
 ### Bug Reports
-Found a bug? [Open an issue](https://github.com/safejoy/Joys-Notes/issues/new) with:
+Found a bug? [Open an issue](https://github.com/safejoy/Jotes/issues/new) with:
 - Browser and version
 - Steps to reproduce
 - Expected vs actual behavior
 
 ### Feature Requests
-Have an idea? [Start a discussion](https://github.com/safejoy/Joys-Notes/discussions) or open an issue!
+Have an idea? [Start a discussion](https://github.com/safejoy/Jotes/discussions) or open an issue!
 
 ### Pull Requests
 1. Fork the repository
@@ -149,7 +149,7 @@ Have an idea? [Start a discussion](https://github.com/safejoy/Joys-Notes/discuss
 ### Development Setup
 ```bash
 # Fork and clone your fork
-git clone https://github.com/YOUR-USERNAME/Joys-Notes.git
+git clone https://github.com/YOUR-USERNAME/Jotes.git
 cd Joys-Notes
 
 # Create a branch for your feature
